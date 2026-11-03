@@ -17,7 +17,6 @@ Aqui coloco em prática os fundamentos do ecossistema Spring: arquitetura em cam
 - **H2 Database**: banco de dados em memória
 - **JUnit**: testes automatizados
 - **Maven**: gerenciamento de dependências
-
 ---
 
 ## Endpoints
@@ -26,6 +25,8 @@ Aqui coloco em prática os fundamentos do ecossistema Spring: arquitetura em cam
 |:------:|------|-----------|
 | `POST` | `/products` | Cadastra um novo produto |
 | `GET` | `/products` | Lista todos os produtos |
+| `GET` | `/products/{id}` | Busca um produto pelo id (retorna 404 se não existir) |
+| `DELETE` | `/products/{id}` | Remove um produto pelo id (retorna 404 se não existir) |
 
 ### Exemplo: cadastrar produto
 
@@ -124,14 +125,16 @@ Durante o desenvolvimento, registro o que aprendo na pasta [`docs`](docs):
 
 | Arquivo | Conteúdo |
 |---------|----------|
-| [Annotations](docs/Annotations.md) | Anotações do Spring usadas no projeto e o que cada uma faz |
-| [Dicas](docs/Dicas.md) | Dicas gerais e pontos que aprendi na prática (GET x POST, injeção de dependência, testes) |
+| [Spring Boot](docs/SpringBoot.md) | Anotações e classes do Spring usadas no projeto e o que cada uma faz |
+| [JUnit no Spring Boot](docs/JUnit-SpringBoot.md) | Testes do projeto explicados passo a passo |
+| [Dicas](docs/Tips.md) | Dicas gerais e pontos que aprendi na prática (GET x POST, injeção de dependência, testes) |
  
 ---
 
 ## O que pratiquei neste projeto
 
-- Criação de API REST com `@RestController`, `@GetMapping`, `@PostMapping` e `@RequestBody`
+- Criação de API REST com `@RestController`, `@GetMapping`, `@PostMapping`, `@DeleteMapping`, `@RequestBody` e `@PathVariable`
+- Respostas com o status HTTP correto usando `ResponseEntity` (200, 204 e 404)
 - Persistência com JPA (`@Entity`, `@Id`, `@GeneratedValue`) e `JpaRepository`
 - Injeção de dependência pelo construtor
 - Configuração com `application.yml`
