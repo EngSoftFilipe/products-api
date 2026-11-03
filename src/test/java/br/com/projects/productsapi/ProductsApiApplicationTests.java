@@ -2,29 +2,46 @@ package br.com.projects.productsapi;
 
 import br.com.projects.productsapi.model.Product;
 import br.com.projects.productsapi.repository.ProductRepository;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class ProductsApiApplicationTests {
 
-		// O Spring não tem outro jeito de saber onde entregar o repository. Aí precisa do @Autowired no campo
-		@Autowired
-		private ProductRepository productRepository;
+	// O Spring não tem outro jeito de saber onde entregar o repository. Aí precisa do @Autowired no campo
+	@Autowired
+	private ProductRepository productRepository;
 
-		@Test
-		void saveProduct(){
-			Product product = new Product();
-			product.setName("Mouse");
-			product.setPrice(150.0);
-			productRepository.save(product);
+	@Test
+	@DisplayName("Método POST")
+	void postProduct(){
+		Product product = new Product();
+		product.setName("Mouse");
+		product.setPrice(150.0);
+		productRepository.save(product);
 
-			List<Product> products = productRepository.findAll();
-			assertFalse(products.isEmpty());
+		List<Product> products = productRepository.findAll();
+		assertFalse(products.isEmpty());
+	}
+
+	@Test
+	@DisplayName("Método GET")
+	void getProductByID(){
+		Product product = new Product();
+		product.setName("Mouse Attack Shark X11");
+		product.setPrice(150.0);
+		Product saved = productRepository.save(product);
+
+		Optional<Product> found = productRepository.findById(saved.getId());
+
+		assertTrue(found.isPresent());
+		assertEquals("Mouse Attack Shark X11", found.get().getName());
 	}
 }
