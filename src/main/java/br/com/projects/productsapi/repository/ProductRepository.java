@@ -7,5 +7,6 @@ import java.util.List;
 
 // Dentro dos generics '< >' colocamos a entidade e o tipo do ID
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    List<Product> id(Long id);
+
+    List<Product> findByNameContainingIgnoreCase(String name);
 }
