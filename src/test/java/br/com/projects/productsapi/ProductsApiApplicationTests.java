@@ -20,28 +20,52 @@ class ProductsApiApplicationTests {
 	private ProductRepository productRepository;
 
 	@Test
-	@DisplayName("Método POST")
-	void postProduct(){
+	@DisplayName("POST: Deve salvar o produto no banco")
+	void shouldPostProduct(){
 		Product product = new Product();
 		product.setName("Mouse");
 		product.setPrice(150.0);
 		productRepository.save(product);
-
 		List<Product> products = productRepository.findAll();
 		assertFalse(products.isEmpty());
 	}
 
 	@Test
-	@DisplayName("Método GET")
-	void getProductByID(){
+	@DisplayName("GET: Deve encontrar o produto pelo ID")
+	void shouldGetProductByID(){
+		Product product = new Product();
+		product.setName("Mouse Attack Shark X11");
+		product.setPrice(150.0);
+		Product saved = productRepository.save(product);
+		Optional<Product> found = productRepository.findById(saved.getId());
+		assertTrue(found.isPresent());
+		assertEquals("Mouse Attack Shark X11", found.get().getName());
+	}
+	@Test
+	@DisplayName("PUT: Deve atualizar dados do produto")
+	void shouldUpdateProduct(){
 		Product product = new Product();
 		product.setName("Mouse Attack Shark X11");
 		product.setPrice(150.0);
 		Product saved = productRepository.save(product);
 
-		Optional<Product> found = productRepository.findById(saved.getId());
+		saved.setName("Geladeira");
+		saved.setPrice(2579.90);
+		productRepository.save(saved);
 
-		assertTrue(found.isPresent());
-		assertEquals("Mouse Attack Shark X11", found.get().getName());
+		Product updated = productRepository.findById(saved.getId()).orElseThrow();
+		assertEquals("Geladeira", updated.getName());
+		assertEquals(2579.90, updated.getPrice(), 0.001);
+	}
+
+	@Test
+	@DisplayName("DELETE: Deve apagar o produto salvo")
+	void shouldDeleteProduct(){
+		Product product = new Product();
+		product.setName("Mouse Attack Shark X11");
+		product.setPrice(150.0);
+		Product saved = productRepository.save(product);
+		productRepository.delete(saved);
+		assertFalse(productRepository.existsById(saved.getId()));
 	}
 }
