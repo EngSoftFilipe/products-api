@@ -24,6 +24,7 @@
 - Na presença de um construtor, o Spring tem a obrigação de passar o repository para criar a classe
 - Não precisaria usar a annotation, o autowired vira repetição
 - Em testes, normalmente usamos @Autowired no campo, porque quem cria a classe de teste é o JUnit
+- OBS: No código da aplicação (controller, service), o recomendado é receber pelo **construtor**
 ```java
 // @Autowired --> Redundante, construtor já leva os parâmetros
 private final ProductRepository productRepository;
@@ -52,7 +53,7 @@ void saveProduct(){
 
 ### Optional
 - Avisa ao sistema que um produto pode não existir
-- Retorna 200 (Ok) e o corpo null --> pode causar confusão
+- Se o controller devolver o Optional direto e o produto não existir, a resposta é 200 (Ok) com corpo null --> pode causar confusão
 
 ````java
 import org.springframework.web.bind.annotation.PathVariable;
