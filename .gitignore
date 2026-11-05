@@ -39,6 +39,7 @@ logs/
 ### Segredos e variáveis de ambiente ###
 .env
 .env.*
+!.env.example
 application-local.yml
 
 ### Sistema operacional ###
