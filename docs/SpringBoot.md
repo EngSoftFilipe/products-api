@@ -50,6 +50,18 @@ public List<Product> getByName(@RequestParam String name){}
 ```
 
 - Se o parâmetro puder não vir, usa `@RequestParam(required = false)`. Assim, sem o `?name=`, a variável chega `null` em vez de dar erro
+
+### @Autowired
+- Injeção de dependência (DI)
+- Avisa ao Spring que ele deve **entregar** naquele campo um objeto que ele já criou (ex: o repository)
+- Usada quando a classe **não recebe** a dependência pelo construtor (ex: nas classes de teste, criadas pelo JUnit)
+- Exemplo prático: no teste, quero usar o repository para salvar um produto. Coloco o `@Autowired` em cima do campo, e o Spring entrega o repository pronto. Sem ele, o campo fica `null` e dá `NullPointerException`
+
+```java
+@Autowired
+private ProductRepository productRepository;
+```
+
 > ## Classes Spring
 
 ### ResponseEntity
