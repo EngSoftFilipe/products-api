@@ -1,7 +1,7 @@
 # Spring Boot
 
 > ## Importante
-- O Application é o inicializador do servidor, ele deve ficar na raiz do pacote, para o Spring poder mapear ele sem dar erro
+- O Application é o inicializador do servidor, ele deve ficar na raiz do pacote, porque o Spring procura as outras classes (controllers, repositories, configurações) a partir do pacote dele para baixo. Classes fora desse pacote não são encontradas
 - No repository, o Spring lê o nome do método e monta a consulta sozinho (ex: findByNameContainingIgnoreCase), dê preferência por padrões de mercado
 > ## Anotações
 
