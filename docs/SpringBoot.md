@@ -24,7 +24,7 @@ public Product saveProduct(@RequestBody Product product){}
  
 // POST /products
 // { "name": "Mouse", "price": 150.0 }
-// product.getName() = "Mouse" | product.getPrice() = 150.0
+// --> product.getName() = "Mouse" | product.getPrice() = 150.0
 ```
 ### @PathVariable
 - Diz **qual** item a requisição quer (ex: qual id)
@@ -34,7 +34,7 @@ public Product saveProduct(@RequestBody Product product){}
 @GetMapping("/{id}")
 public ResponseEntity<Product> getById(@PathVariable Long id){}
  
-// GET /products/5 → id = 5
+// GET /products/5 --> id = 5
 ```
 
 - Só lê a URL: se o valor vier no JSON do corpo, quem pega é o `@RequestBody`
@@ -46,10 +46,12 @@ public ResponseEntity<Product> getById(@PathVariable Long id){}
 @GetMapping("/search")
 public List<Product> getByName(@RequestParam String name){}
  
-// GET /products/search?name=mouse → name = "mouse"
+// GET /products/search?name=mouse --> name = "mouse"
 ```
 
 - Se o parâmetro puder não vir, usa `@RequestParam(required = false)`. Assim, sem o `?name=`, a variável chega `null` em vez de dar erro
+
+> ## Injeção de dependência
 
 ### @Autowired
 - Injeção de dependência (DI)
@@ -130,7 +132,7 @@ public class CarroController {
 }
 
 // GET /carros/motor
-// { "modelo": "XPTO-0", "cavalos": 120, "cilindros": 4, "litragem": 2.0 }
+// --> { "modelo": "XPTO-0", "cavalos": 120, "cilindros": 4, "litragem": 2.0 }
 ```
 
 **Funciona, mas não é o ideal:** com `@Autowired` no atributo. Não é recomendado fora dos testes, porque a classe pode ser criada sem a dependência (o motor fica `null` e gera `NullPointerException`), o atributo não pode ser `final` e as dependências ficam escondidas, em vez de aparecerem no construtor
@@ -193,7 +195,7 @@ public CarroController(@Qualifier("motorTurbo") Motor motor) {
     this.motor = motor;
 }
 
-// motor.getCavalos() = 180
+// --> motor.getCavalos() = 180
 ```
 
 - `@Bean(name = "...")` dá o nome na hora de **criar**
@@ -216,16 +218,139 @@ public Motor motorAspirado() {
 
 ```java
 public CarroController(Motor motor) { }
-// recebe o motorAspirado (o padrão)
+// --> recebe o motorAspirado (o padrão)
 
 public CarroEsportivoController(@Qualifier("motorTurbo") Motor motor) { }
-// recebe o motorTurbo (escolhido pelo nome)
+// --> recebe o motorTurbo (escolhido pelo nome)
 ```
 
 #### Quando usar cada um
 - **`@Primary`:** quando um dos beans é o padrão e o outro é usado só de vez em quando
 - **`@Qualifier`:** quando cada lugar precisa escolher um bean específico
 - **Os dois juntos:** funciona, e o `@Qualifier` ganha, porque é a escolha mais específica
+
+### Annotation própria
+- É uma **etiqueta** que eu mesmo crio. Sozinha ela não faz nada: quem dá sentido a ela é quem lê (nesse caso, o Spring)
+- Criada com `@interface`, e não com `class` ou `interface`
+- Exemplo prático: em vez de escrever `@Qualifier("motorAspirado")` toda vez que quero o motor aspirado, crio a annotation `@Aspirado` e uso só ela
+
+```java
+@Qualifier("motorAspirado")
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER})
+public @interface Aspirado {
+}
+```
+
+| Parte | O que diz |
+|---|---|
+| `@interface` | Isto é uma annotation, e não uma interface comum |
+| `@Qualifier("...")` | Faz a minha annotation funcionar como um `@Qualifier` com esse nome |
+| `@Retention(RUNTIME)` | **Até quando** a etiqueta existe. `RUNTIME` = continua existindo com a aplicação rodando, por isso o Spring consegue ler |
+| `@Target({...})` | **Onde** a etiqueta pode ser colada: `TYPE` (classe), `FIELD` (atributo), `METHOD` (método), `PARAMETER` (parâmetro) |
+
+**Antes:** com o nome escrito como texto
+
+```java
+public CarroController(@Qualifier("motorAspirado") Motor motor) { }
+```
+
+**Depois:** com a minha annotation
+
+```java
+public CarroController(@Aspirado Motor motor) { }
+// --> recebe o motorAspirado
+```
+
+#### Por que isso é melhor
+- **Com `@Aspirado`:** se eu errar o nome, o código nem compila, e a IDE avisa na hora
+- **Com `@Qualifier("motorAspirado")`:** se eu digitar `"motorAspirdo"`, o erro só aparece quando a aplicação sobe
+- Para usar no parâmetro do construtor, o `@Target` precisa ter `ElementType.PARAMETER`, senão a IDE acusa erro
+
+#### Onde colocar na arquitetura
+- Num pacote `annotation`, perto de quem usa (ex: `montadora/annotation`)
+- Se for usada no sistema inteiro, num pacote compartilhado (ex: `common/annotation`)
+- Sempre **abaixo do pacote do Application**, senão o Spring não encontra
+
+#### Usando com injeção de dependência
+
+**Recomendado:** pelo construtor, com a annotation no parâmetro (precisa do `ElementType.PARAMETER` no `@Target`)
+
+```java
+@RestController
+@RequestMapping("/carros")
+public class CarroController {
+
+    private final Motor motor;
+
+    public CarroController(@Aspirado Motor motor) {
+        this.motor = motor;
+    }
+
+    @GetMapping("/motor")
+    public Motor getMotor() {
+        return motor;
+    }
+}
+
+// GET /carros/motor
+// --> { "modelo": "XPTO-0", "cavalos": 120, "cilindros": 4, "litragem": 2.0 }
+```
+
+**Funciona, mas não é o ideal:** no atributo, com `@Autowired` (usa o `ElementType.FIELD` do `@Target`)
+
+```java
+@RestController
+@RequestMapping("/carros")
+public class CarroController {
+
+    @Autowired
+    @Aspirado
+    private Motor motor;
+
+    @GetMapping("/motor")
+    public Motor getMotor() {
+        return motor;
+    }
+}
+
+// GET /carros/motor
+// --> { "modelo": "XPTO-0", "cavalos": 120, "cilindros": 4, "litragem": 2.0 }
+```
+
+- Nos dois casos, o `@Aspirado` diz **qual** motor o Spring deve entregar, e o resultado é o mesmo
+- O `@Autowired` no atributo não é o ideal pelos mesmos motivos de antes: o atributo não pode ser `final` e a classe pode ser criada com o motor `null`
+
+#### @Target
+- Diz **em que lugar do código** a annotation pode ser colada
+- Usado em cima da annotation que estou criando, com a lista de lugares permitidos
+- Exemplo prático: quero usar o `@Aspirado` no atributo e no construtor. Coloco `FIELD` e `PARAMETER` no `@Target`. Se tentar colar em outro lugar, o código nem compila
+
+```java
+@Target({ElementType.TYPE, ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER})
+public @interface Aspirado {
+}
+```
+
+| Valor | Onde pode colar | Exemplo |
+|---|---|---|
+| `TYPE` | Em cima de uma **classe** | `@Aspirado public class Motor { }` |
+| `FIELD` | Em cima de um **atributo** | `@Aspirado private Motor motor;` |
+| `METHOD` | Em cima de um **método** | `@Aspirado public Motor motor() { }` |
+| `PARAMETER` | Num **parâmetro** de método ou construtor | `CarroController(@Aspirado Motor motor)` |
+
+**Fora da lista, não compila:**
+
+```java
+@Target({ElementType.FIELD}) // só atributo
+public @interface Aspirado {
+}
+
+@Aspirado private Motor motor;                  // --> compila
+public CarroController(@Aspirado Motor motor)   // --> erro: PARAMETER não está no @Target
+```
+
+- O `@Target` não é só das annotations que eu crio: as do Java e do Spring também têm. O `@Autowired`, por exemplo, pode ir em construtor, método, parâmetro e atributo
 
 > ## Classes Spring
 
