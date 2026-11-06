@@ -61,6 +61,97 @@ public List<Product> getByName(@RequestParam String name){}
 @Autowired
 private ProductRepository productRepository;
 ```
+### @Configuration
+- Diz para o Spring que essa classe **fabrica objetos** para ele guardar
+- Usado em cima de uma classe de configuração, que contém métodos `@Bean`
+
+### @Bean
+- Diz para o Spring **guardar o objeto que o método devolve**, para depois entregar onde for pedido
+- Usado em cima de um **método**, dentro de uma classe `@Configuration`
+- Exemplo prático: a montadora (`@Configuration`) fabrica o motor (`@Bean`) com cavalos, cilindros e modelo já definidos. Depois, quem precisar do motor só pede no construtor, e o Spring entrega o motor pronto
+
+```java
+// Classe comum, sem anotação: é só o "molde" do motor
+public class Motor {
+    private String modelo;
+    private Integer cavalos;
+    private Integer cilindros;
+    private Double litragem;
+
+    // getters e setters
+}
+
+// A montadora: fabrica o motor e entrega para o Spring guardar
+@Configuration
+public class MontadoraConfiguration {
+
+    @Bean
+    public Motor motor() {
+        Motor motor = new Motor();
+        motor.setModelo("XPTO-0");
+        motor.setCavalos(120);
+        motor.setCilindros(4);
+        motor.setLitragem(2.0);
+        return motor;
+    }
+}
+```
+
+#### Onde entra a injeção de dependência
+- **Dependência** = algo que a classe precisa para funcionar (o carro **depende** do motor)
+- **Injetar** = o Spring **entrega** essa dependência pronta, em vez de a classe criar com `new`
+- Ou seja: a classe só diz **o que precisa**, e o Spring decide **de onde vem**
+
+**Não recomendado:** sem injeção, o carro fabrica o próprio motor
+
+```java
+public class CarroController {
+    private Motor motor = new Motor(); // o carro fica preso a esse motor, vazio e sem configuração
+}
+```
+
+**Recomendado:** com injeção pelo construtor, o carro só pede o motor, e o Spring entrega o da montadora
+
+```java
+@RestController
+@RequestMapping("/carros")
+public class CarroController {
+
+    private final Motor motor;
+
+    public CarroController(Motor motor) { // "preciso de um motor"
+        this.motor = motor;               // o Spring entrega o motor do @Bean
+    }
+
+    @GetMapping("/motor")
+    public Motor getMotor() {
+        return motor;
+    }
+}
+
+// GET /carros/motor
+// → { "modelo": "XPTO-0", "cavalos": 120, "cilindros": 4, "litragem": 2.0 }
+```
+
+**Funciona, mas não é o ideal:** com `@Autowired` no atributo. Não é recomendado fora dos testes, porque a classe pode ser criada sem a dependência (o motor fica `null` e gera `NullPointerException`), o atributo não pode ser `final` e as dependências ficam escondidas, em vez de aparecerem no construtor
+
+```java
+@Autowired
+private Motor motor;
+```
+
+- Nos testes, o `@Autowired` no atributo é aceito porque quem cria a classe de teste é o JUnit, então não dá para passar nada pelo construtor
+
+#### Por que isso é bom
+- Para trocar o motor (ex: de 120 para 200 cavalos), mexo **só na montadora**, sem tocar no carro
+- O carro não precisa saber **como** o motor é fabricado, só que ele existe
+- Nos testes, dá para entregar um motor diferente para o carro sem alterar o código dele
+- O Spring cria o motor **uma vez só** e entrega o mesmo objeto para todo mundo que pedir (singleton)
+
+#### Quando usar cada um
+- Classe minha → `@Component`, `@Service` ou `@Repository` (o Spring cria sozinho)
+- Classe de biblioteca, que não posso alterar, ou que precisa de configuração → `@Bean` (eu crio e o Spring guarda)
+- Nos dois casos, quem usa **pede pelo construtor**, e isso é a injeção de dependência
 
 > ## Classes Spring
 
