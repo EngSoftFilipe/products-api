@@ -24,7 +24,7 @@ public Product saveProduct(@RequestBody Product product){}
  
 // POST /products
 // { "name": "Mouse", "price": 150.0 }
-// → product.getName() = "Mouse" | product.getPrice() = 150.0
+// product.getName() = "Mouse" | product.getPrice() = 150.0
 ```
 ### @PathVariable
 - Diz **qual** item a requisição quer (ex: qual id)
@@ -130,7 +130,7 @@ public class CarroController {
 }
 
 // GET /carros/motor
-// → { "modelo": "XPTO-0", "cavalos": 120, "cilindros": 4, "litragem": 2.0 }
+// { "modelo": "XPTO-0", "cavalos": 120, "cilindros": 4, "litragem": 2.0 }
 ```
 
 **Funciona, mas não é o ideal:** com `@Autowired` no atributo. Não é recomendado fora dos testes, porque a classe pode ser criada sem a dependência (o motor fica `null` e gera `NullPointerException`), o atributo não pode ser `final` e as dependências ficam escondidas, em vez de aparecerem no construtor
@@ -149,9 +149,83 @@ private Motor motor;
 - O Spring cria o motor **uma vez só** e entrega o mesmo objeto para todo mundo que pedir (singleton)
 
 #### Quando usar cada um
-- Classe minha → `@Component`, `@Service` ou `@Repository` (o Spring cria sozinho)
-- Classe de biblioteca, que não posso alterar, ou que precisa de configuração → `@Bean` (eu crio e o Spring guarda)
+- Classe minha --> `@Component`, `@Service` ou `@Repository` (o Spring cria sozinho)
+- Classe de biblioteca, que não posso alterar, ou que precisa de configuração --> `@Bean` (eu crio e o Spring guarda)
 - Nos dois casos, quem usa **pede pelo construtor**, e isso é a injeção de dependência
+
+### @Qualifier
+- Diz para o Spring **qual bean entregar** quando existe mais de um do mesmo tipo
+- Usado na hora de **pedir** o bean (no parâmetro do construtor), junto com o nome do bean
+- Exemplo prático: a montadora agora fabrica dois motores, um aspirado e um turbo. Se o carro só pedir "um motor", o Spring não sabe qual entregar e dá erro. Com o `@Qualifier`, o carro diz qual motor quer pelo nome
+
+```java
+@Configuration
+public class MontadoraConfiguration {
+
+    @Bean(name = "motorAspirado") // dá o nome na hora de criar
+    public Motor motorAspirado() {
+        Motor motor = new Motor();
+        motor.setCavalos(120);
+        return motor;
+    }
+
+    @Bean(name = "motorTurbo")
+    public Motor motorTurbo() {
+        Motor motor = new Motor();
+        motor.setCavalos(180);
+        return motor;
+    }
+}
+```
+
+**Sem o `@Qualifier`:** o Spring encontra dois motores e não sabe qual entregar
+
+```java
+public CarroController(Motor motor) { }
+
+// Erro ao iniciar: NoUniqueBeanDefinitionException
+```
+
+**Com o `@Qualifier`:** o carro escolhe o motor pelo nome
+
+```java
+public CarroController(@Qualifier("motorTurbo") Motor motor) {
+    this.motor = motor;
+}
+
+// motor.getCavalos() = 180
+```
+
+- `@Bean(name = "...")` dá o nome na hora de **criar**
+- `@Qualifier("...")` escolhe pelo nome na hora de **pedir**
+
+### @Primary
+- Diz para o Spring **qual bean é o padrão** quando existe mais de um do mesmo tipo
+- Usado em cima do método `@Bean` (ou da classe `@Component`) que deve ser entregue quando ninguém diz qual quer
+- Exemplo prático: a maioria dos carros usa o motor aspirado e só alguns usam o turbo. Marco o aspirado como `@Primary`, e só quem quer o turbo precisa usar o `@Qualifier`
+
+```java
+@Bean(name = "motorAspirado")
+@Primary // se ninguém disser qual, entrega este
+public Motor motorAspirado() {
+    Motor motor = new Motor();
+    motor.setCavalos(120);
+    return motor;
+}
+```
+
+```java
+public CarroController(Motor motor) { }
+// recebe o motorAspirado (o padrão)
+
+public CarroEsportivoController(@Qualifier("motorTurbo") Motor motor) { }
+// recebe o motorTurbo (escolhido pelo nome)
+```
+
+#### Quando usar cada um
+- **`@Primary`:** quando um dos beans é o padrão e o outro é usado só de vez em quando
+- **`@Qualifier`:** quando cada lugar precisa escolher um bean específico
+- **Os dois juntos:** funciona, e o `@Qualifier` ganha, porque é a escolha mais específica
 
 > ## Classes Spring
 
