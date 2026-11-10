@@ -51,6 +51,57 @@ public List<Product> getByName(@RequestParam String name){}
 
 - Se o parâmetro puder não vir, usa `@RequestParam(required = false)`. Assim, sem o `?name=`, a variável chega `null` em vez de dar erro
 
+### @Service
+- Diz para o Spring que essa classe guarda as **regras de negócio** (o que pode e o que não pode ser feito com os dados)
+- Usado em cima da classe service, que fica entre o controller e o repository
+- O Spring cria o objeto sozinho, igual ao `@Repository`, e entrega para quem pedir no construtor
+- Exemplo prático: não quero que ninguém cadastre um produto com preço negativo. O controller só recebe a requisição e chama o service. O service confere a regra e, se estiver tudo certo, chama o repository para salvar
+
+```java
+@Service
+public class ProductService {
+
+    private final ProductRepository productRepository;
+
+    public ProductService(ProductRepository productRepository) {
+        this.productRepository = productRepository;
+    }
+
+    public Product save(Product product) {
+        if (product.getPrice() <= 0) {
+            throw new IllegalArgumentException("O preço não pode ser zero ou negativo");
+        }
+        return productRepository.save(product);
+    }
+}
+
+// POST /products com { "name": "Mouse", "price": -10.0 }
+// --> erro: "O preço não pode ser zero ou negativo"
+```
+
+#### Onde fica na arquitetura
+
+```text
+Controller  -->  Service  -->  Repository  -->  Banco
+(recebe e        (decide as     (busca e
+responde)        regras)        salva)
+```
+
+- Fica num pacote próprio: `service/ProductService.java`
+- Nome padrão: **Entidade + Service** (ex: `ProductService`)
+- Não pode se chamar só `Service`, porque conflita com o nome da annotation
+
+#### O que vai no service
+- Regras de negócio (ex: não aceitar dois produtos com o mesmo nome)
+- Validações que dependem do banco ou de regras da empresa
+
+#### O que não vai no service
+- Receber a requisição e montar a resposta HTTP: isso é do controller
+- Validação de formato (campo vazio, texto grande demais): fica nas annotations de validação, como `@NotBlank` e `@Size`
+
+- **Recomendado:** regra de negócio no service, e o controller só recebe e responde
+- **Funciona, mas não é o ideal:** regra de negócio no controller, porque ele fica inchado e a regra não pode ser reaproveitada
+
 > ## Injeção de dependência
 
 ### @Autowired
