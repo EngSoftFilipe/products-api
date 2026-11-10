@@ -102,6 +102,35 @@ responde)        regras)        salva)
 - **Recomendado:** regra de negócio no service, e o controller só recebe e responde
 - **Funciona, mas não é o ideal:** regra de negócio no controller, porque ele fica inchado e a regra não pode ser reaproveitada
 
+### @Component
+- Diz para o Spring que essa classe é um **bean de uso geral**: o Spring cria o objeto sozinho e entrega para quem pedir no construtor
+- Usado em classes que o Spring deve gerenciar, mas que **não são** controller, service nem repository (ex: um conversor ou um validador)
+- Exemplo prático: tenho uma classe que transforma um `Product` em DTO. Ela não é regra de negócio nem acesso ao banco, então coloco `@Component`, e qualquer classe pode pedir ela no construtor
+
+```java
+@Component
+public class ProductMapper {
+
+    public ProductDTO toDTO(Product product) {
+        // converte o Product em ProductDTO
+    }
+}
+```
+
+#### @Component x @Service x @Repository x @RestController
+- Para o Spring, todos funcionam como `@Component`: o `@Service`, por exemplo, tem um `@Component` dentro dele
+- A diferença é o **recado para quem lê o código**: cada um diz qual camada a classe é
+
+| Annotation | Diz que a classe é... | Extra que o Spring dá |
+|---|---|---|
+| `@Component` | Um bean qualquer, de uso geral | Nenhum |
+| `@Service` | Regra de negócio | Nenhum (só deixa claro o papel) |
+| `@Repository` | Acesso ao banco | Traduz os erros do banco para exceções do Spring |
+| `@RestController` | Recebe requisições | Liga os métodos às rotas HTTP |
+
+- **Recomendado:** regra de negócio com `@Service`, e classe auxiliar (conversor, validador) com `@Component`
+- **Funciona, mas não é o ideal:** usar `@Component` no lugar do `@Service`, porque quem lê não sabe de cara que ali tem regra de negócio
+
 > ## Injeção de dependência
 
 ### @Autowired
