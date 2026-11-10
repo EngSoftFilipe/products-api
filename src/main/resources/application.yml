@@ -1,30 +1,48 @@
 spring:
+  # Nome da aplicação
   application:
     name: products-api
+
+  # Carrega as variáveis do arquivo .env (sem erro se ele não existir)
   config:
     import: optional:file:.env[.properties]
+
+  # Conexão com o banco (valores vêm do .env)
   datasource:
     url: ${DB_URL}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+
   jpa:
+    # Devolve a conexão com o banco assim que o repository termina
     open-in-view: false
     hibernate:
+      # Cria as tabelas ao iniciar e apaga ao encerrar (só para desenvolvimento)
       ddl-auto: create-drop
+    # Mostra no log o SQL gerado pelo Hibernate
     show-sql: true
     properties:
       hibernate:
+        # Deixa o SQL do log quebrado em linhas, mais fácil de ler
         format_sql: true
+
+  # Não executa scripts SQL (data.sql / schema.sql) ao iniciar
   sql:
     init:
       mode: never
+
+  # Console do H2 no navegador (nunca ligar em produção)
   h2:
     console:
       enabled: true
       path: /h2-console
+
+  # Força as cores no log do terminal
   output:
     ansi:
       enabled: always
+
+# Formato do log no console: hora, nível, classe e mensagem, com cores
 logging:
   pattern:
     console: "%highlight(%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n%ex)"
