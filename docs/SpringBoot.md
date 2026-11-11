@@ -181,10 +181,88 @@ public class RequestInfo { }      // --> o Spring cria uma por requisição e ap
 - **Recomendado:** `request` ou `session` quando a classe **guarda dados** de uma requisição ou de um usuário
 - **Não recomendado:** singleton guardando dado de usuário em atributo (ex: um `usuarioLogado` dentro de um service). Como o singleton é um só para todos, um usuário pode ver os dados do outro
 
-#### É muito usado?
+#### Uso na prática
 - O `singleton` é usado o tempo todo, mas sem escrever `@Scope`, porque é o padrão
 - Os outros são raros em APIs REST. O `session` quase não aparece, porque as APIs modernas não guardam sessão no servidor: o usuário é identificado a cada requisição por um token
-- Pergunta clássica de entrevista: "qual é o escopo padrão de um bean no Spring?" --> **singleton**
+
+### @Value
+- Diz para o Spring **ler um valor do `application.yml`** (ou de uma variável de ambiente) e colocar numa variável da classe
+- Usado no parâmetro do construtor ou em cima de um atributo, com o nome da propriedade dentro de `${...}`
+- Exemplo prático: o limite de produtos é 100 em desenvolvimento e 500 em produção. Em vez de escrever o número no código, coloco no `yml`, e o `@Value` entrega o valor para a classe. Para mudar, mexo só no `yml`, sem recompilar
+
+```yaml
+app:
+  nome: Products API
+  max-produtos: 100
+```
+
+```java
+@Value("${app.nome}")
+private String nome;            // --> "Products API"
+
+@Value("${app.max-produtos}")
+private Integer maxProdutos;    // --> 100 (o Spring converte o texto para número sozinho)
+```
+
+#### Por que usar
+- **Mudar sem recompilar:** troco o valor no `yml` ou na variável de ambiente, e o código continua igual
+- **Um valor por ambiente:** o mesmo código roda em desenvolvimento e em produção, com valores diferentes
+- **Um lugar só:** o valor fica no `yml`, e não espalhado pelas classes
+- **Segredos fora do código:** senhas e chaves vêm do `.env`
+
+#### Valor padrão
+- Se a propriedade não existir, a aplicação **não sobe**
+- Para evitar isso, coloco um valor padrão depois dos `:`
+
+```java
+@Value("${app.max-produtos:50}")
+private Integer maxProdutos;    // --> 50, se não existir no yml
+```
+
+- Nunca colocar uma senha real como valor padrão, porque ela fica escrita no código e vai para o GitHub
+
+```java
+@Value("${DB_PASSWORD:minhaSenha123}")   // a senha fica exposta no código
+```
+
+#### Onde usar
+
+**Recomendado:** no parâmetro do construtor, porque o atributo pode ser `final` e a classe não nasce sem o valor
+
+```java
+private final String nome;
+
+public ProductService(@Value("${app.nome}") String nome) {
+    this.nome = nome;
+}
+```
+
+**Funciona, mas não é o ideal:** em cima do atributo, porque o valor não pode ser `final`
+
+```java
+@Value("${app.nome}")
+private String nome;
+```
+
+#### @Value x @ConfigurationProperties
+- **`@Value`:** para uma ou duas propriedades soltas
+- **`@ConfigurationProperties`:** para várias propriedades do mesmo assunto, juntas numa classe
+
+```java
+@ConfigurationProperties(prefix = "app.config")   // pega tudo que está debaixo de app.config
+public class AppProperties {
+    private String nome;
+    private String versao;
+
+    // getters e setters
+}
+
+@SpringBootApplication
+@EnableConfigurationProperties(AppProperties.class)   // registra a classe no Spring
+public class ProductsApiApplication { }
+```
+
+- O `AppProperties.class` é a **classe**, e não o objeto: quem cria o objeto e preenche os valores com o `yml` é o Spring
 
 > ## Injeção de dependência
 
