@@ -131,6 +131,61 @@ public class ProductMapper {
 - **Recomendado:** regra de negócio com `@Service`, e classe auxiliar (conversor, validador) com `@Component`
 - **Funciona, mas não é o ideal:** usar `@Component` no lugar do `@Service`, porque quem lê não sabe de cara que ali tem regra de negócio
 
+### @Scope
+- Diz para o Spring **quantas cópias do bean ele deve criar** e **por quanto tempo** cada uma vive
+- Usado em cima da classe (`@Component`, `@Service`...) ou do método `@Bean`
+- Exemplo prático: um carrinho de compras precisa ser um para cada usuário. Se fosse um só para todos, todo mundo veria os mesmos itens. Com `@Scope("session")`, cada usuário recebe o seu próprio carrinho
+
+```java
+@Component
+@Scope("session")
+public class Carrinho {
+    private List<Product> itens = new ArrayList<>();
+}
+
+// usuário A adiciona um mouse  --> só o carrinho do A tem o mouse
+// usuário B adiciona um teclado --> só o carrinho do B tem o teclado
+```
+
+| Scope | Quantas cópias | Vive até... | Exemplo de uso |
+|---|---|---|---|
+| `singleton` (padrão) | **Uma** para a aplicação inteira | A aplicação desligar | Services, repositories, controllers |
+| `prototype` | **Uma nova** cada vez que alguém pede | Quem pediu parar de usar | Objeto que guarda dados temporários de um processo |
+| `request` | **Uma por requisição** HTTP | A requisição terminar | Dados que só valem durante uma chamada (ex: id da requisição para o log) |
+| `session` | **Uma por usuário** | A sessão do usuário expirar | Carrinho de compras |
+
+#### O que é automático e o que é manual
+- **Singleton:** automático. Todo bean já nasce singleton, sem escrever nada
+- **Os outros:** eu só **declaro** o escopo. Criar, entregar e apagar as cópias continua sendo trabalho do Spring
+
+```java
+@Service
+public class ProductService { }   // --> singleton, sem escrever nada
+
+@Component
+@Scope("request")
+public class RequestInfo { }      // --> o Spring cria uma por requisição e apaga no fim
+```
+
+**Recomendado:** os atalhos dos escopos web, porque se eu errar o nome a IDE avisa na hora
+
+```java
+@RequestScope    // igual a @Scope("request")
+@SessionScope    // igual a @Scope("session")
+```
+
+**Funciona, mas não é o ideal:** `@Scope("request")`, porque é um texto. Se eu escrever `"requets"`, o erro só aparece quando a aplicação sobe
+
+#### Quando usar cada um
+- **Recomendado:** `singleton` para classes que **não guardam dados** de ninguém, só executam ações (services, repositories, controllers)
+- **Recomendado:** `request` ou `session` quando a classe **guarda dados** de uma requisição ou de um usuário
+- **Não recomendado:** singleton guardando dado de usuário em atributo (ex: um `usuarioLogado` dentro de um service). Como o singleton é um só para todos, um usuário pode ver os dados do outro
+
+#### É muito usado?
+- O `singleton` é usado o tempo todo, mas sem escrever `@Scope`, porque é o padrão
+- Os outros são raros em APIs REST. O `session` quase não aparece, porque as APIs modernas não guardam sessão no servidor: o usuário é identificado a cada requisição por um token
+- Pergunta clássica de entrevista: "qual é o escopo padrão de um bean no Spring?" --> **singleton**
+
 > ## Injeção de dependência
 
 ### @Autowired
