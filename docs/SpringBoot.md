@@ -264,6 +264,11 @@ public class ProductsApiApplication { }
 
 - O `AppProperties.class` é a **classe**, e não o objeto: quem cria o objeto e preenche os valores com o `yml` é o Spring
 
+#### Curiosidades
+- Posso usar vários .yml no projeto, e isso é padrão de mercado
+- Um .yml para cada ambiente: `application-dev.yml` (desenvolvimento), `application-test.yml` (testes) e `application-prod.yml` (produção)
+- O `application.yml` guarda o que vale para todos os ambientes, e o ambiente ativo é escolhido com `spring.profiles.active`
+
 > ## Injeção de dependência
 
 ### @Autowired
